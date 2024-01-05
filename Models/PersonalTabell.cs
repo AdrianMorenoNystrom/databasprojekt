@@ -13,6 +13,8 @@ public partial class PersonalTabell
 
     public string? Personnummer { get; set; }
 
+    public DateTime? AnställningsDatum { get; set; }
+
     public string? Befattning { get; set; }
 
     public int? LärareIdFk { get; set; }
@@ -20,4 +22,6 @@ public partial class PersonalTabell
     public virtual ICollection<BetygTabell> BetygTabells { get; set; } = new List<BetygTabell>();
 
     public virtual Lärare? LärareIdFkNavigation { get; set; }
+
+    public virtual ICollection<LönTabell> LönTabells { get; set; } = new List<LönTabell>();
 }

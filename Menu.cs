@@ -29,6 +29,7 @@ namespace LABB3
                         break;
                     case 2:
                         database.GetStudents();
+                        database.GradeStudent();
                         break;
                     case 3:
                         database.GetGrades();
@@ -43,7 +44,7 @@ namespace LABB3
                         database.createPersonal();
                         break;
                     case 7:
-                        //sätta betyg
+                        database.GetCourses();
                         break;
                     default:
                         Console.WriteLine("Ogiltigt val. Försök igen.");

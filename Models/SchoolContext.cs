@@ -23,13 +23,15 @@ public partial class SchoolContext : DbContext
 
     public virtual DbSet<Lärare> Lärares { get; set; }
 
+    public virtual DbSet<LönTabell> LönTabells { get; set; }
+
     public virtual DbSet<PersonalTabell> PersonalTabells { get; set; }
 
     public virtual DbSet<StudentTabell> StudentTabells { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
 #warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer("Data Source = (localdb)\\MSSQLLocalDB;Initial Catalog=LABB2 SKOLA;Integrated Security=True;");
+        => optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=LABB2 SKOLA;Trusted_Connection=True;Encrypt=false");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -99,6 +101,26 @@ public partial class SchoolContext : DbContext
                 .HasColumnName("Lärare");
         });
 
+        modelBuilder.Entity<LönTabell>(entity =>
+        {
+            entity.HasKey(e => e.Lön);
+
+            entity.ToTable("LönTabell");
+
+            entity.Property(e => e.Lön).ValueGeneratedNever();
+            entity.Property(e => e.AnställningsDatum).HasColumnType("date");
+            entity.Property(e => e.Befattning).HasMaxLength(50);
+            entity.Property(e => e.EfterNamn).HasMaxLength(50);
+            entity.Property(e => e.FörNamn).HasMaxLength(50);
+            entity.Property(e => e.PersonIdFk).HasColumnName("PersonIdFK");
+            entity.Property(e => e.Personnummer).HasMaxLength(50);
+
+            entity.HasOne(d => d.PersonIdFkNavigation).WithMany(p => p.LönTabells)
+                .HasForeignKey(d => d.PersonIdFk)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_LönTabell_PersonalTabell");
+        });
+
         modelBuilder.Entity<PersonalTabell>(entity =>
         {
             entity.HasKey(e => e.PersonIdPk).HasName("PK__Personal__AA2FFB858259B802");
@@ -106,6 +128,7 @@ public partial class SchoolContext : DbContext
             entity.ToTable("PersonalTabell");
 
             entity.Property(e => e.PersonIdPk).HasColumnName("PersonIdPK");
+            entity.Property(e => e.AnställningsDatum).HasColumnType("date");
             entity.Property(e => e.Befattning).HasMaxLength(50);
             entity.Property(e => e.EfterNamn).HasMaxLength(50);
             entity.Property(e => e.FörNamn).HasMaxLength(50);

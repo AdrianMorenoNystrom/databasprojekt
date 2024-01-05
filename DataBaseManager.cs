@@ -1,11 +1,13 @@
 ﻿using LABB3.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -100,7 +102,7 @@ namespace LABB3
 
                     Console.WriteLine("Elev tillagd i databasen");
 
-                    // Exit the loop since a valid personal number was provided
+                    
                     break;
                 }
 
@@ -270,15 +272,116 @@ namespace LABB3
                         return;
                 }
 
-                var students = studentsQuery.ToList();
+                var students = studentsQuery
+                .Join(dbContext.KlassTabells,
+                    student => student.KlassIdFk,
+                    klass => klass.KlassIdPk,
+                    (student, klass) => new
+                    {
+                        student.FörNamn,
+                        student.EfterNamn,
+                        Klass = klass.KlassNamn
+                    })
+                .ToList();
+
 
                 foreach (var student in students)
                 {
 
-                    Console.WriteLine($"{student.FörNamn} {student.EfterNamn}");
+                    Console.WriteLine($"{student.FörNamn} {student.EfterNamn} - Klass: {student.Klass}\n");
                 }
             }
         }
+
+        public void GradeStudent()
+        {
+            Console.Write("Vill du fortsätta till betygsättning?(Ja/Nej): ");
+            string answer = Console.ReadLine();
+            if (answer.ToLower() == "ja")
+            {
+                var students = dbContext.StudentTabells.ToList();
+                foreach (var student in students)
+                {
+                    string fullname = student.FörNamn+" "+student.EfterNamn;
+                    Console.Write("Skriv namnet på den elev du vill betygsätta: ");
+                    string inputname = Console.ReadLine();
+                    do
+                    {
+                        if (fullname.ToLower() == inputname.ToLower())
+                        {
+                            Console.WriteLine($"Betygsättning för: {fullname}\n");
+
+                            // Lista över lärare
+                            var teachers = dbContext.Lärares.ToList();
+                            foreach (var teacher in teachers)
+                            {
+                                Console.WriteLine($"{teacher.LärareIdPk}");
+                            }
+
+                            // Välj lärare
+                            int teacherId;
+                            Console.Write("Skriv in lärarens ID: ");
+                            while (!int.TryParse(Console.ReadLine(), out teacherId) || !teachers.Any(t => t.LärareIdPk == teacherId))
+                            {
+                                Console.WriteLine("Ogiltigt ID. Försök igen.");
+                                Console.Write("Skriv in lärarens ID: ");
+                            }
+
+                            // Visa kurser
+                            Console.WriteLine("Kurser:");
+                            GetCourses();
+
+                            // Välj kurs och betyg
+                            Console.Write($"Vilken kurs vill du betygsätta {fullname}: ");
+                            string courseName = Console.ReadLine();
+
+                            Console.Write($"Vilket betyg vill du ge {fullname} i {courseName}: ");
+                            string grade = Console.ReadLine();
+
+                            // Spara betyg i databasen
+                            SaveGradeToDatabase(fullname, courseName, grade,teacherId);
+
+                            Console.WriteLine($"Betyget har sparats för {fullname} i {courseName}.");
+                            break;
+                        }
+
+                        Console.WriteLine("Felaktigt namn, har du kollat stavningen?");
+                        Console.Write("Skriv namnet på den elev du vill betygsätta: ");
+                        inputname = Console.ReadLine();
+
+                    } while (true);
+                }
+            }
+        }
+
+        public void SaveGradeToDatabase(string studentFullName, string courseName, string grade, int teacherId)
+        {
+            var student = dbContext.StudentTabells.FirstOrDefault(s => (s.FörNamn + " " + s.EfterNamn).ToLower() == studentFullName.ToLower());
+            var course = dbContext.KursTabells.FirstOrDefault(c => c.KursNamn.ToLower() == courseName.ToLower());
+            var teacher = dbContext.BetygTabells.FirstOrDefault(t => t.LärareIdFk == teacherId);
+
+            if (student != null && course != null && teacher != null)
+            {
+                var newGrade = new BetygTabell
+                {
+                    StudentIdFk = student.StudentIdPk,
+                    KursIdFk = course.KursIdPk,
+                    Betyg = grade,
+                    LärareIdFk = teacher.LärareIdFk,
+                    BetygDatum = DateTime.Now 
+                };
+
+                dbContext.BetygTabells.Add(newGrade);
+                dbContext.SaveChanges();
+            }
+            else
+            {
+                Console.WriteLine("Felaktiga uppgifter för betygsättning. Kontrollera elevens namn, kursnamn och lärarens ID.");
+            }
+        }
+
+
+
         //Hämtar alla ur personaltabellen oavsett befattning.
         public void GetEmployees()
         {
@@ -287,8 +390,32 @@ namespace LABB3
             Console.WriteLine("Lista över alla anställda:");
             foreach (var employee in employees)
             {
-                Console.WriteLine($"{employee.FörNamn} {employee.EfterNamn} - Befattning: {employee.Befattning}");
+                Console.WriteLine($"{employee.FörNamn} {employee.EfterNamn} - Befattning: {employee.Befattning} - Jobbat sedan: {employee.AnställningsDatum?.ToString("yyyy-MM-dd")}\n");
             }
+
+            var statistics = dbContext.PersonalTabells
+            .GroupBy(e => e.Befattning)
+            .Select(g => new
+            {
+                Befattning = g.Key,
+                AntalAnställda = g.Count(),
+                MedelLön = g.Join(
+                    dbContext.LönTabells,
+                    personal => personal.PersonIdPk,
+                    salary => salary.PersonIdFk,
+                    (personal, salary) => salary.Lön
+                ).Average()
+            })
+            .ToList();
+
+            Console.WriteLine("--------------------------------------------------------------------");
+            Console.WriteLine("Antal anställda och medellön för varje befattning\n");
+
+            foreach (var data in statistics)
+            {
+                Console.WriteLine($"{data.Befattning}: {data.AntalAnställda} anställda, Medellön: {data.MedelLön} SEK");
+            }
+
         }
 
         //Hämtar anställda ur personaltabellen beroende på vilken befattning dom har.
@@ -352,12 +479,15 @@ namespace LABB3
             }
 
         }
-
-        //Sätt betyg på elevmetod. 
-        public void GradeStudent()
+        public void GetCourses()
         {
-        }
+            var courses = dbContext.KursTabells.ToList();
 
+            foreach(var course in courses)
+            {
+                Console.WriteLine(course.KursNamn);
+            }
+        }
     }
 }
 
