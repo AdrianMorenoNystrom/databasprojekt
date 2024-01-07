@@ -168,4 +168,5 @@ public partial class SchoolContext : DbContext
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
 }

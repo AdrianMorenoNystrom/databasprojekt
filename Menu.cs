@@ -20,7 +20,7 @@ namespace LABB3
             choices.ShowChoices();
 
             int choice = choices.GetUserChoice();
-            while (choice != 8)
+            while (choice != 9)
             {
                 switch (choice)
                 {
@@ -29,7 +29,6 @@ namespace LABB3
                         break;
                     case 2:
                         database.GetStudents();
-                        database.GradeStudent();
                         break;
                     case 3:
                         database.GetGrades();
@@ -45,6 +44,9 @@ namespace LABB3
                         break;
                     case 7:
                         database.GetCourses();
+                        break;
+                    case 8:
+                        database.SetGrade();
                         break;
                     default:
                         Console.WriteLine("Ogiltigt val. Försök igen.");

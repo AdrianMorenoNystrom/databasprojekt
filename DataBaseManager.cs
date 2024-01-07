@@ -293,94 +293,78 @@ namespace LABB3
             }
         }
 
-        public void GradeStudent()
+        public void SetGrade()
         {
-            Console.Write("Vill du fortsätta till betygsättning?(Ja/Nej): ");
-            string answer = Console.ReadLine();
-            if (answer.ToLower() == "ja")
+            
+
+            var students = dbContext.StudentTabells.ToList();
+
+            foreach(var student in students)
             {
-                var students = dbContext.StudentTabells.ToList();
-                foreach (var student in students)
+                Console.WriteLine($"ID: {student.StudentIdPk} Namn: {student.FörNamn} {student.EfterNamn}");
+            }
+
+            Console.Write("Vilken elev vill du sätta betyg på?: ");
+            int studentChoice = int.Parse(Console.ReadLine());
+            var student1 = dbContext.StudentTabells.FirstOrDefault(s => s.StudentIdPk == studentChoice);
+
+            
+
+            var teachers = dbContext.PersonalTabells.Where(e => e.LärareIdFk != null).ToList();
+            foreach(var teacher in teachers)
+            {
+                Console.WriteLine($"LärareId: {teacher.LärareIdFk} Namn:{teacher.FörNamn} {teacher.EfterNamn}");
+            }
+
+            Console.Write("Vilken lärare ska sätta betyget?: ");
+            int teacherChoice = int.Parse(Console.ReadLine());
+            var teacher1 = dbContext.BetygTabells.FirstOrDefault(c => c.LärareIdFk == teacherChoice);
+
+            var courses = dbContext.KursTabells.ToList();
+            foreach(var course in courses)
+            {
+                Console.WriteLine($"ID: {course.KursIdPk} Kursnamn: {course.KursNamn}");
+            }
+
+            Console.Write("Vilken kurs ska eleven betygsättas i?: ");
+            int courseChoice = int.Parse(Console.ReadLine());
+            var course1 = dbContext.KursTabells.FirstOrDefault(c => c.KursIdPk == courseChoice);
+
+            Console.Write("Vilket betyg vill du sätta?: ");
+            string gradeInput = Console.ReadLine();
+
+            Console.WriteLine("Ge betyget ett ID (3-siffror)");
+            int gradeId = int.Parse(Console.ReadLine());
+
+            DateTime gradeDate = DateTime.Today;
+
+            using(var transaction = dbContext.Database.BeginTransaction())
+            {
+                try
                 {
-                    string fullname = student.FörNamn+" "+student.EfterNamn;
-                    Console.Write("Skriv namnet på den elev du vill betygsätta: ");
-                    string inputname = Console.ReadLine();
-                    do
+                    var grade = new BetygTabell
                     {
-                        if (fullname.ToLower() == inputname.ToLower())
-                        {
-                            Console.WriteLine($"Betygsättning för: {fullname}\n");
+                        StudentIdFk = studentChoice,
+                        KursIdFk = courseChoice,
+                        BetygDatum = gradeDate,
+                        Betyg = gradeInput,
+                        BetygIdPk = gradeId
+                    };
 
-                            // Lista över lärare
-                            var teachers = dbContext.Lärares.ToList();
-                            foreach (var teacher in teachers)
-                            {
-                                Console.WriteLine($"{teacher.LärareIdPk}");
-                            }
+                    dbContext.Add(grade);
+                    dbContext.SaveChanges();
 
-                            // Välj lärare
-                            int teacherId;
-                            Console.Write("Skriv in lärarens ID: ");
-                            while (!int.TryParse(Console.ReadLine(), out teacherId) || !teachers.Any(t => t.LärareIdPk == teacherId))
-                            {
-                                Console.WriteLine("Ogiltigt ID. Försök igen.");
-                                Console.Write("Skriv in lärarens ID: ");
-                            }
-
-                            // Visa kurser
-                            Console.WriteLine("Kurser:");
-                            GetCourses();
-
-                            // Välj kurs och betyg
-                            Console.Write($"Vilken kurs vill du betygsätta {fullname}: ");
-                            string courseName = Console.ReadLine();
-
-                            Console.Write($"Vilket betyg vill du ge {fullname} i {courseName}: ");
-                            string grade = Console.ReadLine();
-
-                            // Spara betyg i databasen
-                            SaveGradeToDatabase(fullname, courseName, grade,teacherId);
-
-                            Console.WriteLine($"Betyget har sparats för {fullname} i {courseName}.");
-                            break;
-                        }
-
-                        Console.WriteLine("Felaktigt namn, har du kollat stavningen?");
-                        Console.Write("Skriv namnet på den elev du vill betygsätta: ");
-                        inputname = Console.ReadLine();
-
-                    } while (true);
+                    transaction.Commit();
+                    Console.WriteLine("Betygsättningen genomfördes utan problem");
+                }
+                catch(Exception ex)
+                {
+                    transaction.Rollback();
+                    Console.WriteLine(ex.InnerException);
+                    Console.WriteLine("Betygsättning genomfördes ej, prova igen.");
                 }
             }
         }
-
-        public void SaveGradeToDatabase(string studentFullName, string courseName, string grade, int teacherId)
-        {
-            var student = dbContext.StudentTabells.FirstOrDefault(s => (s.FörNamn + " " + s.EfterNamn).ToLower() == studentFullName.ToLower());
-            var course = dbContext.KursTabells.FirstOrDefault(c => c.KursNamn.ToLower() == courseName.ToLower());
-            var teacher = dbContext.BetygTabells.FirstOrDefault(t => t.LärareIdFk == teacherId);
-
-            if (student != null && course != null && teacher != null)
-            {
-                var newGrade = new BetygTabell
-                {
-                    StudentIdFk = student.StudentIdPk,
-                    KursIdFk = course.KursIdPk,
-                    Betyg = grade,
-                    LärareIdFk = teacher.LärareIdFk,
-                    BetygDatum = DateTime.Now 
-                };
-
-                dbContext.BetygTabells.Add(newGrade);
-                dbContext.SaveChanges();
-            }
-            else
-            {
-                Console.WriteLine("Felaktiga uppgifter för betygsättning. Kontrollera elevens namn, kursnamn och lärarens ID.");
-            }
-        }
-
-
 
         //Hämtar alla ur personaltabellen oavsett befattning.
         public void GetEmployees()

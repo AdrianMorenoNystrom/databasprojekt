@@ -13,15 +13,16 @@ namespace LABB3
             Console.ForegroundColor = ConsoleColor.DarkRed;
             Console.WriteLine("Välkommen till navigationsmenyn för skoldatabasen!");
             Console.ResetColor();
-            Console.WriteLine("1. Hämta en lista på anställda.");
-            Console.WriteLine("2. Hämta en lista på alla elever och få valet att betygsätta.");
+            Console.WriteLine("1. Hämta en lista på anställda(Med info om befattningar samt löner).");
+            Console.WriteLine("2. Hämta en lista på alla elever.");
             Console.WriteLine("3. Hämta en lista på alla betyg satt den senaste månaden.");
             Console.WriteLine("4. Hämta en lista på alla kurser i databasen, snittbetyget samt det högsta och lägsta betyget för varje kurs.");
             Console.WriteLine("5. Lägg till en elev i databasen");
             Console.WriteLine("6. Lägg till en anställd i databasen");
             Console.WriteLine("7. Aktiva kurser");
-            Console.WriteLine("8. Avsluta");
-            Console.Write("Gör ditt val (1-8): ");
+            Console.WriteLine("8. Sätta betyg");
+            Console.WriteLine("9. Avsluta");
+            Console.Write("Gör ditt val (1-9): ");
         }
         public int PositionChoice()
         { 
@@ -40,7 +41,7 @@ namespace LABB3
             while (!int.TryParse(Console.ReadLine(), out choice))
             {
                 Console.WriteLine("Ogiltigt val. Försök igen.");
-                Console.Write("Gör ditt val (1-8): ");
+                Console.Write("Gör ditt val (1-9): ");
 
             }
             Console.Clear();
